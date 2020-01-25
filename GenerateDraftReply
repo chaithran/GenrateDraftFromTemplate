@@ -1,0 +1,67 @@
+  public ActionResult GenerateDraftReply()
+        {
+            try
+            {
+                var result = //read from db;
+                string nameOfAuthority = "", designationOfAuthority = "", addressOfAuthority = "";
+                if (result != null)
+                {
+                    nameOfAuthority = result.NameofAuthority;
+                    designationOfAuthority = result.DesignationOfAuthority;
+                    addressOfAuthority = result.AddressoftheTuthority;
+                }
+                string startupPath = ConfigurationManager.AppSettings["ServerPath"];
+                Random val = new Random(2);
+                startupPath += "\\" + val.Next() + "_Draft.docx";
+                using (WordprocessingDocument wordDocument = WordprocessingDocument.Create(startupPath, WordprocessingDocumentType.Document))
+                {
+                    MainDocumentPart mainPart = wordDocument.AddMainDocumentPart();
+                    mainPart.Document = new Document();
+                    Body body = mainPart.Document.AppendChild(new Body());
+                    Paragraph para = body.AppendChild(new Paragraph());
+                    Run run = para.AppendChild(new Run());
+                }
+
+                string sourceFile = ConfigurationManager.AppSettings["ServerPath"];
+
+                var files = System.IO.Directory.GetFiles(sourceFile);
+                string templatePath = Path.Combine(sourceFile, "Template.docx");
+                System.IO.File.Copy(templatePath, startupPath, true);
+
+                using (var document = WordprocessingDocument.Open(startupPath, true))
+                {
+                    document.ChangeDocumentType(WordprocessingDocumentType.Document);
+                    var mainPart = document.MainDocumentPart;
+                    //var settings = mainPart.DocumentSettingsPart;
+                    //var templateRelationship = new AttachedTemplate { Id = "relationId1" };
+                    //settings.Settings.Append(templateRelationship);
+                    Dictionary<string, string> keyValues = new Dictionary<string, string>();
+                    DateTime todaysDate = DateTime.Now.Date;
+                    string day = todaysDate.Day.ToString();
+                    string month = todaysDate.Month.ToString();
+                    string year = todaysDate.Year.ToString();
+                    var body = mainPart.Document.Body;
+                    foreach (var text in mainPart.Document.Body.Descendants<Text>())
+                    {
+                        if (text.Text.Contains("##Date##"))
+                            text.Text = text.Text.Replace("##Date##", day + '-' + month + '-' + year);
+                        if (text.Text.Contains("##Name##"))
+                            text.Text = text.Text.Replace("##Name##", nameOfAuthority);
+                        if (text.Text.Contains("##Designation##"))
+                            text.Text = text.Text.Replace("##Designation##", designationOfAuthority);
+                        if (text.Text.Contains("##Address##"))
+                            text.Text = text.Text.Replace("##Address##", addressOfAuthority);
+                        if (text.Text.Contains("##Subject##"))
+                            text.Text = text.Text.Replace("##Subject##", "TestSubject");
+                        if (text.Text.Contains("##Ref##"))
+                            text.Text = text.Text.Replace("##Ref##", "Test Ref");
+                    }
+                    mainPart.Document.Save();
+                    return File(startupPath, "application/msword", "DraftReply.docx");
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
